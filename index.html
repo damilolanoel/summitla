@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Summit Law — Generate Word Document</title>
+<script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #0A1628 0%, #1a3a5c 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+  }
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 50px 60px;
+    max-width: 580px;
+    width: 100%;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+    text-align: center;
+  }
+  .icon {
+    width: 80px; height: 80px;
+    background: #0A1628;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 24px;
+    font-size: 32px;
+  }
+  h1 {
+    font-size: 24px;
+    color: #0A1628;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+  p.sub {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+  .features {
+    background: #f9f7f3;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 32px;
+    text-align: left;
+  }
+  .features h3 {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #B8962E;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: #444;
+  }
+  .feature-item::before {
+    content: '✓';
+    color: #27ae60;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .btn-download {
+    background: #B8962E;
+    color: #0A1628;
+    border: none;
+    padding: 16px 40px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    font-family: 'Segoe UI', sans-serif;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .btn-download:hover { background: #8B6914; color: white; transform: translateY(-1px); }
+  .btn-download:disabled { background: #ccc; color: #999; cursor: not-allowed; transform: none; }
+  .status {
+    font-size: 13px;
+    color: #888;
+    min-height: 20px;
+    transition: all 0.3s;
+  }
+  .status.success { color: #27ae60; font-weight: 600; }
+  .status.error { color: #e74c3c; }
+  .divider {
+    border: none;
+    border-top: 1px solid #eee;
+    margin: 28px 0;
+  }
+  .note {
+    font-size: 11.5px;
+    color: #aaa;
+    line-height: 1.7;
+  }
+  .badge {
+    display: inline-block;
+    background: #e8f8f0;
+    color: #27ae60;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">📄</div>
+  <div class="badge">Ready to Generate</div>
+  <h1>Summit Law Firm</h1>
+  <p class="sub">Website Development Proposal & Terms of Engagement<br/>Click the button below to generate and download the full Word document.</p>
+
+  <div class="features">
+    <h3>Document Includes</h3>
+    <div class="feature-item">Cover Page with Firm & Project Details</div>
+    <div class="feature-item">Table of Contents (13 Sections)</div>
+    <div class="feature-item">Executive Summary & Project Highlights</div>
+    <div class="feature-item">Full Scope of Work & Deliverables</div>
+    <div class="feature-item">Project Timeline (5 Phases)</div>
+    <div class="feature-item">Investment & Payment Schedule</div>
+    <div class="feature-item">Client Responsibilities</div>
+    <div class="feature-item">Full Terms & Conditions</div>
+    <div class="feature-item">Intellectual Property Rights Clause</div>
+    <div class="feature-item">Confidentiality (NDA) Clause</div>
+    <div class="feature-item">Warranty & Post-Launch Support Policy</div>
+    <div class="feature-item">Dispute Resolution (Nigerian Law)</div>
+    <div class="feature-item">Signature & Execution Page</div>
+  </div>
+
+  <button class="btn-download" id="downloadBtn" onclick="generateDoc()">
+    ⬇️ &nbsp; Download Word Document (.docx)
+  </button>
+  <div class="status" id="status">Ready to generate your document.</div>
+
+  <hr class="divider"/>
+  <p class="note">📝 Fill in the <strong>[bracketed]</strong> fields (your name, pricing, contact) in Microsoft Word after downloading.<br/>The document is fully editable and formatted for professional use.</p>
+</div>
+
+<script>
+async function generateDoc() {
+  const btn = document.getElementById('downloadBtn');
+  const status = document.getElementById('status');
+
+  btn.disabled = true;
+  btn.textContent = '⏳  Generating Document...';
+  status.className = 'status';
+  status.textContent = 'Please wait, building your Word document...';
+
+  try {
+    const {
+      Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+      HeadingLevel, AlignmentType, BorderStyle, WidthType, ShadingType,
+      PageBreak, TableOfContents, Header, Footer, PageNumber,
+      NumberFormat, convertInchesToTwip, UnderlineType
+    } = docx;
+
+    // ── COLOUR & FONT CONSTANTS ──
+    const NAVY   = "0A1628";
+    const GOLD   = "B8962E";
+    const LGRAY  = "F9F7F3";
+    const WHITE  = "FFFFFF";
+    const GRAY   = "555555";
+    const RED    = "C0392B";
+
+    const fontName = "Calibri";
+    const serifFont = "Times New Roman";
+
+    // ── HELPERS ──
+    const spacer = (pts = 200) => new Paragraph({ spacing: { before: pts } });
+
+    const goldLine = () => new Paragraph({
+      border: { bottom: { color: GOLD, size: 12, space: 4, style: BorderStyle.SINGLE } },
+      spacing: { after: 200 },
+      children: [new TextRun({ text: "" })]
+    });
+
+    const navyLine = () => new Paragraph({
+      border: { bottom: { color: NAVY, size: 12, space: 4, style: BorderStyle.SINGLE } },
+      spacing: { after: 240 },
+      children: [new TextRun({ text: "" })]
+    });
+
+    const sectionLabel = (text) => new Paragraph({
+      spacing: { before: 400, after: 80 },
+      children: [new TextRun({
+        text: text.toUpperCase(),
+        font: fontName, size: 18, bold: true, color: GOLD,
+        characterSpacing: 60
+      })]
+    });
+
+    const sectionTitle = (text) => new Paragraph({
+      spacing: { before: 80, after: 100 },
+      children: [new TextRun({
+        text, font: serifFont, size: 52, bold: true, color: NAVY
+      })]
+    });
+
+    const subHeading = (text) => new Paragraph({
+      spacing: { before: 320, after: 120 },
+      children: [new TextRun({
+        text: text.toUpperCase(),
+        font: fontName, size: 22, bold: true, color: NAVY,
+        characterSpacing: 30
+      })]
+    });
+
+    const itemHeading = (text) => new Paragraph({
+      spacing: { before: 240, after: 80 },
+      children: [new TextRun({ text, font: fontName, size: 22, bold: true, color: NAVY })]
+    });
+
+    const bodyText = (text) => new Paragraph({
+      spacing: { before: 60, after: 120, line: 360 },
+      children: [new TextRun({ text, font: fontName, size: 22, color: "333333" })]
+    });
+
+    const bodyTextBold = (label, text) => new Paragraph({
+      spacing: { before: 60, after: 120, line: 360 },
+      children: [
+        new TextRun({ text: label, font: fontName, size: 22, bold: true, color: NAVY }),
+        new TextRun({ text, font: fontName, size: 22, color: "333333" })
+      ]
+    });
+
+    const bulletPoint = (text) => new Paragraph({
+      bullet: { level: 0 },
+      spacing: { before: 40, after: 80, line: 320 },
+      children: [new TextRun({ text, font: fontName, size: 22, color: "333333" })]
+    });
+
+    const infoBox = (label, text) => new Paragraph({
+      spacing: { before: 120, after: 120, line: 340 },
+      indent: { left: convertInchesToTwip(0.3) },
+      border: { left: { color: GOLD, size: 20, space: 8, style: BorderStyle.SINGLE } },
+      shading: { type: ShadingType.SOLID, color: "FEF9EC" },
+      children: [
+        new TextRun({ text: label + " ", font: fontName, size: 21, bold: true, color: NAVY }),
+        new TextRun({ text, font: fontName, size: 21, color: GRAY })
+      ]
+    });
+
+    const warningBox = (label, text) => new Paragraph({
+      spacing: { before: 120, after: 120, line: 340 },
+      indent: { left: convertInchesToTwip(0.3) },
+      border: { left: { color: RED, size: 20, space: 8, style: BorderStyle.SINGLE } },
+      shading: { type: ShadingType.SOLID, color: "FEF5F5" },
+      children: [
+        new TextRun({ text: label + " ", font: fontName, size: 21, bold: true, color: RED }),
+        new TextRun({ text, font: fontName, size: 21, color: GRAY })
+      ]
+    });
+
+    const pageBreak = () => new Paragraph({
+      children: [new PageBreak()]
+    });
+
+    // ── TABLE HELPERS ──
+    const makeCell = (text, {
+      bold = false, bg = WHITE, color = "333333",
+      width = null, isHeader = false, colspan = 1, italic = false
+    } = {}) => new TableCell({
+      columnSpan: colspan,
+      shading: { type: ShadingType.SOLID, color: bg },
+      margins: { top: 80, bottom: 80, left: 120, right: 120 },
+      children: [new Paragraph({
+        children: [new TextRun({
+          text, font: fontName,
+          size: isHeader ? 20 : 21,
+          bold: bold || isHeader,
+          color: isHeader ? WHITE : color,
+          italics: italic
+        })]
+      })],
+      ...(width ? { width: { size: width, type: WidthType.PERCENTAGE } } : {})
+    });
+
+    const makeHeaderRow = (...headers) => new TableRow({
+      tableHeader: true,
+      children: headers.map(h => makeCell(h, { isHeader: true, bg: NAVY }))
+    });
+
+    const makeRow = (cells, highlight = false) => new TableRow({
+      children: cells.map(([text, opts]) => makeCell(text, {
+        ...(opts || {}),
+        bg: highlight ? NAVY : (opts?.bg || WHITE),
+        color: highlight ? WHITE : (opts?.color || "333333"),
+        bold: highlight ? true : (opts?.bold || false)
+      }))
+    });
+
+    const makeAltRow = (cells, idx) => makeRow(cells, false);
+
+    const wrapTable = (rows) => new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows,
+      margins: { top: 80, bottom: 80, left: 0, right: 0 }
+    });
+
+    // ═══════════════════════════════════════════════
+    //  BUILD DOCUMENT SECTIONS
+    // ═══════════════════════════════════════════════
+
+    const children = [
+
+      // ─────────────────── COVER PAGE ───────────────────
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 1200, after: 200 },
+        children: [new TextRun({
+          text: "⚖", font: "Segoe UI Emoji", size: 72, color: GOLD
+        })]
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 100, after: 80 },
+        children: [new TextRun({
+          text: "SUMMIT LAW FIRM",
+          font: serifFont, size: 56, bold: true, color: NAVY,
+          characterSpacing: 80
+        })]
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 600 },
+        children: [new TextRun({
+          text: "Solicitors  ·  Barristers  ·  Legal Consultants  ·  Abuja, Nigeria",
+          font: fontName, size: 22, color: GOLD, characterSpacing: 40
+        })]
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        border: {
+          top: { color: GOLD, size: 8, style: BorderStyle.SINGLE },
+          bottom: { color: GOLD, size: 8, style: BorderStyle.SINGLE }
+        },
+        spacing: { before: 80, after: 80 },
+        shading: { type: ShadingType.SOLID, color: NAVY },
+        children: [new TextRun({
+          text: "  OFFICIAL CLIENT DOCUMENT — CONFIDENTIAL  ",
+          font: fontName, size: 18, bold: true, color: GOLD,
+          characterSpacing: 60
+        })]
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 600, after: 80 },
+        children: [new TextRun({
+          text: "Website Development Proposal",
+          font: serifFont, size: 64, bold: true, color: NAVY
+        })]
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 80, after: 800 },
+        children: [new TextRun({
+          text: "& Terms and Conditions of Engagement",
+          font: serifFont, size: 32, color: GRAY, italics: true
+        })]
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 0, after: 40 },
+        children: [new TextRun({ text: "Prepared For: ", font: fontName, size: 22, bold: true, color: NAVY }),
+          new TextRun({ text: "Summit Law Firm, Abuja, FCT, Nigeria", font: fontName, size: 22, color: GRAY })]
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 40 },
+        children: [new TextRun({ text: "Prepared By: ", font: fontName, size: 22, bold: true, color: NAVY }),
+          new TextRun({ text: "[Your Name / Agency Name]", font: fontName, size: 22, color: GRAY })]
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 40 },
+        children: [new TextRun({ text: "Document Reference: ", font: fontName, size: 22, bold: true, color: NAVY }),
+          new TextRun({ text: "SLF-WEB-2025-001", font: fontName, size: 22, color: GRAY })]
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 40 },
+        children: [new TextRun({ text: "Date: ", font: fontName, size: 22, bold: true, color: NAVY }),
+          new TextRun({ text: "April 2025", font: fontName, size: 22, color: GRAY })]
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 40 },
+        children: [new TextRun({ text: "Version: ", font: fontName, size: 22, bold: true, color: NAVY }),
+          new TextRun({ text: "1.0 — Final Draft", font: fontName, size: 22, color: GRAY })]
+      }),
+
+      pageBreak(),
+
+      // ─────────────────── TABLE OF CONTENTS ───────────────────
+      sectionLabel("Navigation"),
+      sectionTitle("Table of Contents"),
+      goldLine(),
+      bodyText("This document is organized into 13 sections covering every aspect of the website development engagement between the Service Provider and Summit Law Firm."),
+      spacer(160),
+      wrapTable([
+        makeHeaderRow("No.", "Section Title", "Description"),
+        makeRow([["1", { bold: true }], ["Executive Summary", {}], ["Overview of the proposed engagement", {}]], false),
+        makeRow([["2", { bold: true }], ["About the Service Provider", {}], ["Who we are and our credentials", {}]], false),
+        makeRow([["3", { bold: true }], ["Project Understanding", {}], ["Our interpretation of Summit Law's needs", {}]], false),
+        makeRow([["4", { bold: true }], ["Scope of Work", {}], ["Full deliverables, pages and features", {}]], false),
+        makeRow([["5", { bold: true }], ["Project Timeline", {}], ["Phase-by-phase delivery schedule", {}]], false),
+        makeRow([["6", { bold: true }], ["Investment & Pricing", {}], ["Costs, packages and payment structure", {}]], false),
+        makeRow([["7", { bold: true }], ["Client Responsibilities", {}], ["What we need from the client", {}]], false),
+        makeRow([["8", { bold: true }], ["Terms & Conditions", {}], ["Full legal terms governing this project", {}]], false),
+        makeRow([["9", { bold: true }], ["Intellectual Property", {}], ["Ownership rights post-completion", {}]], false),
+        makeRow([["10", { bold: true }], ["Confidentiality", {}], ["Data and information protection clause", {}]], false),
+        makeRow([["11", { bold: true }], ["Warranty & Support", {}], ["Post-launch support policy", {}]], false),
+        makeRow([["12", { bold: true }], ["Dispute Resolution", {}], ["How conflicts will be handled", {}]], false),
+        makeRow([["13", { bold: true }], ["Acceptance & Signatures", {}], ["Formal sign-off and agreement page", {}]], false),
+      ]),
+      spacer(160),
+      infoBox("Note:", "This document constitutes a formal binding agreement upon signing by both parties. Please read all sections carefully before signing. If you require any clarification, kindly contact us before executing the agreement."),
+
+      pageBreak(),
+
+      // ─────────────────── SECTION 1: EXECUTIVE SUMMARY ───────────────────
+      sectionLabel("Section 1"),
+      sectionTitle("Executive Summary"),
+      goldLine(),
+      bodyText("This document constitutes a formal Website Development Proposal and Terms of Engagement submitted to Summit Law Firm, a premier law firm of solicitors, barristers, and legal consultants based in the Federal Capital Territory of Nigeria, Abuja."),
+      bodyText("The purpose of this proposal is to outline the complete scope, timeline, investment, and binding terms and conditions governing the design, development, and delivery of a professional, multi-page website for Summit Law Firm."),
+      bodyText("Following a review of the firm's current digital presence and an understanding of its professional standing, we are confident in our ability to deliver a website that:"),
+      bulletPoint("Establishes a commanding and credible digital presence for Summit Law Firm"),
+      bulletPoint("Reflects the firm's identity, values, and professional stature"),
+      bulletPoint("Attracts and converts potential clients across Nigeria and beyond"),
+      bulletPoint("Is mobile-responsive, fast-loading, and SEO-ready"),
+      bulletPoint("Is fully editable by the firm's staff without technical knowledge"),
+      spacer(160),
+      infoBox("Our Commitment:", "We are committed to delivering a world-class digital product on time, within budget, and to the complete satisfaction of Summit Law Firm. Our team will remain available throughout the project and provide post-launch support as specified herein."),
+      spacer(200),
+      subHeading("Key Project Highlights"),
+      wrapTable([
+        makeHeaderRow("Item", "Detail"),
+        makeRow([["Project Type", { bold: true }], ["Professional Law Firm Website (Multi-Page)", {}]]),
+        makeRow([["Number of Pages", { bold: true }], ["6 Core Pages + Additional Sections", {}]]),
+        makeRow([["Platform", { bold: true }], ["WordPress (Recommended) / Custom HTML", {}]]),
+        makeRow([["Delivery Timeline", { bold: true }], ["6–7 Weeks from Commencement", {}]]),
+        makeRow([["Revision Rounds", { bold: true }], ["3 Rounds Included", {}]]),
+        makeRow([["Post-Launch Support", { bold: true }], ["30 Days Free Maintenance", {}]]),
+        makeRow([["Mobile Responsive", { bold: true }], ["Yes — Fully Optimized", {}]]),
+        makeRow([["Content Editable", { bold: true }], ["Yes — No Coding Required", {}]]),
+      ]),
+
+      pageBreak(),
+
+      // ─────────────────── SECTION 2: ABOUT PROVIDER ───────────────────
+      sectionLabel("Section 2"),
+      sectionTitle("About the Service Provider"),
+      goldLine(),
+      bodyText("[Your Agency/Your Name] is a professional web design and digital solutions provider with a track record of delivering high-quality websites and digital experiences for law firms, corporates, NGOs, and businesses across Nigeria and beyond."),
+      bodyText("We specialize in:"),
+      bulletPoint("Professional Website Design & Development"),
+      bulletPoint("Brand Identity & Digital Strategy"),
+      bulletPoint("Search Engine Optimization (SEO)"),
+      bulletPoint("Web Hosting & Domain Management"),
+      bulletPoint("Website Maintenance & Support"),
+      bulletPoint("Social Media Integration & Digital Marketing"),
+      spacer(200),
+      wrapTable([
+        makeHeaderRow("Detail", "Information"),
+        makeRow([["Service Provider", { bold: true }], ["[Your Full Name / Agency Name]", {}]]),
+        makeRow([["Contact Email", { bold: true }], ["[your@email.com]", {}]]),
+        makeRow([["Phone Number", { bold: true }], ["[+234 XXX XXX XXXX]", {}]]),
+        makeRow([["Location", { bold: true }], ["[Your City], Nigeria", {}]]),
+        makeRow([["RC / Business Reg. No.", { bold: true }], ["[RC Number if applicable / N/A]", {}]]),
+      ]),
+
+      pageBreak(),
+
+      // ─────────────────── SECTION 3: PROJECT UNDERSTANDING ───────────────────
+      sectionLabel("Section 3"),
+      sectionTitle("Project Understanding"),
+      goldLine(),
+      bodyText("Based on our review of Summit Law Firm's current digital footprint and the firm's professional stature, we understand that the project requires:"),
+      bulletPoint("A new, professionally designed website that serves as the firm's primary digital identity"),
+      bulletPoint("A design that conveys trust, authority, and excellence — befitting a top-tier Abuja law firm"),
+      bulletPoint("A site that clearly communicates the firm's practice areas, team, and contact information"),
+      bulletPoint("A client inquiry and consultation booking system to generate new business leads"),
+      bulletPoint("A publications/blog section to demonstrate legal expertise and improve search visibility"),
+      bulletPoint("A website that is easy to update and maintain by non-technical staff"),
+      spacer(160),
+      infoBox("Our Approach:", "We will work closely with Summit Law Firm's designated contact person throughout the project to ensure all content, imagery, and design decisions accurately reflect the firm's brand, vision, and goals."),
+
+      pageBreak(),
+
+      // ─────────────────── SECTION 4: SCOPE OF WORK ───────────────────
+      sectionLabel("Section 4"),
+      sectionTitle("Scope of Work & Deliverables"),
+      goldLine(),
+      bodyText("The following constitutes the complete agreed scope of work for the Summit Law Firm website project. Any feature or service not listed herein shall be considered outside scope and may attract additional charges."),
+      spacer(160),
+      subHeading("4.1 Website Pages"),
+      wrapTable([
+        makeHeaderRow("#", "Page", "Key Content / Features", "Status"),
+        makeRow([["1", { bold: true }], ["Home Page", {}], ["Hero, statistics, services overview, testimonials, CTA", {}], ["✓ Included", { color: "27AE60", bold: true }]]),
+        makeRow([["2", { bold: true }], ["About Us", {}], ["Firm history, mission, vision, values, key stats", {}], ["✓ Included", { color: "27AE60", bold: true }]]),
+        makeRow([["3", { bold: true }], ["Practice Areas", {}], ["8 practice areas with detailed sub-services", {}], ["✓ Included", { color: "27AE60", bold: true }]]),
+        makeRow([["4", { bold: true }], ["Our Team", {}], ["Attorney profiles, roles, bios, social links", {}], ["✓ Included", { color: "27AE60", bold: true }]]),
+        makeRow([["5", { bold: true }], ["Publications / Blog", {}], ["Legal articles, firm news, categories", {}], ["✓ Included", { color: "27AE60", bold: true }]]),
+        makeRow([["6", { bold: true }], ["Contact Us", {}], ["Inquiry form, office details, map, social links", {}], ["✓ Included", { color: "27AE60", bold: true }]]),
+      ]),
+      spacer(240),
+      subHeading("4.2 Features & Functionality"),
+      wrapTable([
+        makeHeaderRow("Feature", "Description", "Included"),
+        makeRow([["Mobile Responsive Design", { bold: true }], ["Fully optimized for all screen sizes and devices", {}], ["✓ Yes", { color: "27AE60", bold: true }]]),
+        makeRow([["SEO Basic Setup", { bold: true }], ["Meta tags, title tags, page descriptions, alt text", {}], ["✓ Yes", { color: "27AE60", bold: true }]]),
+        makeRow([["Contact / Inquiry Form", { bold: true }], ["Functional form with email notification", {}], ["✓ Yes", { color: "27AE60", bold: true }]]),
+        makeRow([["Google Map Integration", { bold: true }], ["Embedded map showing firm's Abuja location", {}], ["✓ Yes", { color: "27AE60", bold: true }]]),
+        makeRow([["Social Media Links", { bold: true }], ["Facebook, LinkedIn, Twitter, Instagram", {}], ["✓ Yes", { color: "27AE60", bold: true }]]),
+        makeRow([["In-Browser Content Editing", { bold: true }], ["Click-to-edit for non-technical staff updates", {}], ["✓ Yes", { color: "27AE60", bold: true }]]),
+        makeRow([["SSL Certificate", { bold: true }], ["Secure HTTPS for the website", {}], ["+ Add-on", { color: GOLD, bold: true }]]),
+        makeRow([["WhatsApp Chat Button", { bold: true }], ["Floating WhatsApp contact button", {}], ["+ Add-on", { color: GOLD, bold: true }]]),
+        makeRow([["Online Appointment Booking", { bold: true }], ["Calendar-based consultation booking system", {}], ["+ Add-on", { color: GOLD, bold: true }]]),
+        makeRow([["Client Portal / Login", { bold: true }], ["Private client document access portal", {}], ["+ Add-on", { color: GOLD, bold: true }]]),
+        makeRow([["Domain Registration", { bold: true }], ["e.g., summitlawfirm.com.ng or .com", {}], ["+ Add-on", { color: GOLD, bold: true }]]),
+        makeRow([["Web Hosting (Annual)", { bold: true }], ["Fast and secure cPanel hosting", {}], ["+ Add-on", { color: GOLD, bold: true }]]),
+      ]),
+      spacer(160),
+      infoBox("Add-On Services:", "Features marked as 'Add-on' are available at additional cost. Please indicate which add-ons you require so they may be incorporated into the final invoice."),
+
+      pageBreak(),
+
+      // ─────────────────── SECTION 5: TIMELINE ───────────────────
+      sectionLabel("Section 5"),
+      sectionTitle("Project Timeline"),
+      goldLine(),
+      bodyText("The following timeline outlines the projected delivery schedule from the date of project commencement — defined as the date the signed agreement and initial deposit are both received. All timelines are contingent upon the client's timely provision of required content and approvals."),
+      spacer(160),
+      wrapTable([
+        makeHeaderRow("Phase", "Activity", "Duration", "Deliverable"),
+        makeRow([["Phase 1", { bold: true }], ["Discovery & Strategy — Kickoff meeting, brief review, site architecture planning", {}], ["Week 1", {}], ["Project Brief & Sitemap", {}]]),
+        makeRow([["Phase 2", { bold: true }], ["Design Mockups — Homepage and key page designs presented for approval", {}], ["Week 2–3", {}], ["Design Concept (PDF)", {}]]),
+        makeRow([["Phase 3", { bold: true }], ["Development — Full website build, all pages, content integration", {}], ["Week 3–5", {}], ["Staging/Preview Link", {}]]),
+        makeRow([["Phase 4", { bold: true }], ["Review & Revisions — Client feedback, changes (up to 3 rounds), testing", {}], ["Week 6", {}], ["Revised & Approved Site", {}]]),
+        makeRow([["Phase 5", { bold: true }], ["Launch & Handover — Go-live, domain setup, training, documentation", {}], ["Week 7", {}], ["Live Website + Access", {}]]),
+        makeRow([["Post-Launch", { bold: true, color: WHITE }], ["Support & Maintenance — Bug fixes, minor updates, guidance", { color: WHITE }], ["30 Days", { color: WHITE }], ["Free Post-Launch Support", { color: WHITE }]], true),
+      ]),
+      spacer(160),
+      warningBox("Important:", "Delays caused by the client's failure to provide required content, feedback, or approvals within agreed timeframes may result in a corresponding extension of the project timeline. The Service Provider shall not be held liable for such delays."),
+      spacer(160),
+      subHeading("Content Submission Deadline"),
+      bodyText("All text content, images, attorney photos, logo files, and any other required materials must be submitted by the client no later than the end of Week 2 to avoid project delays. Where the client is unable to supply content, our copywriting and photography referral services are available at additional cost."),
+
+      pageBreak(),
+
+      // ─────────────────── SECTION 6: PRICING ───────────────────
+      sectionLabel("Section 6"),
+      sectionTitle("Investment & Pricing"),
+      goldLine(),
+      bodyText("The following represents the complete investment breakdown for the Summit Law Firm website project. All amounts are quoted in Nigerian Naira (₦) and are valid for 30 days from the date of this document."),
+      spacer(160),
+      subHeading("6.1 Core Package"),
+      wrapTable([
+        makeHeaderRow("Item", "Description", "Amount (₦)"),
+        makeRow([["Website Design", { bold: true }], ["Custom UI/UX design for all 6 pages, brand-aligned", {}], ["₦ [Amount]", { color: GOLD, bold: true }]]),
+        makeRow([["Website Development", { bold: true }], ["Full front-end & back-end development, mobile responsive", {}], ["₦ [Amount]", { color: GOLD, bold: true }]]),
+        makeRow([["Content Integration", { bold: true }], ["Integration of client-supplied text, images, and media", {}], ["₦ [Amount]", { color: GOLD, bold: true }]]),
+        makeRow([["SEO Setup", { bold: true }], ["On-page SEO, meta tags, Google indexing submission", {}], ["₦ [Amount]", { color: GOLD, bold: true }]]),
+        makeRow([["Testing & QA", { bold: true }], ["Cross-browser and cross-device testing", {}], ["₦ [Amount]", { color: GOLD, bold: true }]]),
+        makeRow([["Training & Handover", { bold: true }], ["1-hour admin training session + user guide document", {}], ["₦ [Amount]", { color: GOLD, bold: true }]]),
+        makeRow([["TOTAL", { bold: true, color: WHITE }], ["Complete Website Package", { color: WHITE }], ["₦ [Total Amount]", { color: WHITE, bold: true }]], true),
+      ]),
+      spacer(240),
+      subHeading("6.2 Optional Add-On Services"),
+      wrapTable([
+        makeHeaderRow("Add-On Service", "Billing Type", "Amount (₦)"),
+        makeRow([["Domain Registration (.com.ng or .com)", { bold: true }], ["Annual", {}], ["₦ [Amount]", { color: GOLD, bold: true }]]),
+        makeRow([["Web Hosting (cPanel, 10GB SSD)", { bold: true }], ["Annual", {}], ["₦ [Amount]", { color: GOLD, bold: true }]]),
+        makeRow([["SSL Certificate", { bold: true }], ["Annual", {}], ["₦ [Amount]", { color: GOLD, bold: true }]]),
+        makeRow([["Professional Copywriting (per page)", { bold: true }], ["One-Off", {}], ["₦ [Amount]", { color: GOLD, bold: true }]]),
+        makeRow([["WhatsApp Chat Integration", { bold: true }], ["One-Off", {}], ["₦ [Amount]", { color: GOLD, bold: true }]]),
+        makeRow([["Online Booking / Calendar System", { bold: true }], ["One-Off", {}], ["₦ [Amount]", { color: GOLD, bold: true }]]),
+        makeRow([["Monthly Website Maintenance", { bold: true }], ["Monthly Retainer", {}], ["₦ [Amount]", { color: GOLD, bold: true }]]),
+      ]),
+      spacer(240),
+      subHeading("6.3 Payment Schedule"),
+      wrapTable([
+        makeHeaderRow("Milestone", "Percentage", "Trigger / Condition"),
+        makeRow([["Initial Deposit", { bold: true }], ["50%", { bold: true, color: NAVY }], ["Due upon signing — before project commences", {}]]),
+        makeRow([["Second Payment", { bold: true }], ["30%", { bold: true, color: NAVY }], ["Due upon approval of design mockups (Phase 2)", {}]]),
+        makeRow([["Final Payment", { bold: true, color: WHITE }], ["20%", { color: WHITE, bold: true }], ["Due before website goes live (Phase 5)", { color: WHITE }]], true),
+      ]),
+      spacer(160),
+      infoBox("Payment Method:", "All payments are to be made via bank transfer to the account details provided on the official invoice. Receipts will be issued for all payments. Work shall only commence upon receipt of the initial deposit."),
+
+      pageBreak(),
+
+      // ─────────────────── SECTION 7: CLIENT RESPONSIBILITIES ───────────────────
+      sectionLabel("Section 7"),
+      sectionTitle("Client Responsibilities"),
+      goldLine(),
+      bodyText("The successful and timely delivery of this project requires active participation and cooperation from the Client. The following items are the sole responsibility of Summit Law Firm and must be provided within the agreed timeframes."),
+      spacer(160),
+      subHeading("7.1 Content Requirements"),
+      bodyText("The Client is responsible for supplying the following content materials:"),
+      bulletPoint("Firm logo in high-resolution format (PNG, SVG, or AI file preferred)"),
+      bulletPoint("Brand colours (hex codes) and any existing brand style guide"),
+      bulletPoint("Professional headshots of all attorneys and partners to be featured on the website"),
+      bulletPoint("Attorney biographies and professional credentials for each team member"),
+      bulletPoint("Firm overview, history, mission statement, and vision statement"),
+      bulletPoint("Office address, phone number, email address, and operating hours"),
+      bulletPoint("Practice area descriptions (or approval of Service Provider's drafted copy)"),
+      bulletPoint("Any existing client testimonials, case studies, or awards to be featured"),
+      spacer(160),
+      subHeading("7.2 Communication & Approvals"),
+      bulletPoint("Designate a single point of contact for all project communication"),
+      bulletPoint("Provide feedback on design mockups within 3 business days of delivery"),
+      bulletPoint("Respond to all Service Provider correspondence within 48 hours"),
+      bulletPoint("Provide final approval in writing (email or signed form) before launch"),
+      bulletPoint("Attend scheduled review meetings or virtual calls as required"),
+      spacer(160),
+      subHeading("7.3 Access & Credentials"),
+      bulletPoint("Provide access to existing domain registrar (if domain is already owned)"),
+      bulletPoint("Provide access to existing hosting account (if applicable)"),
+      bulletPoint("Provide social media login credentials if integration is required"),
+      spacer(160),
+      warningBox("Please Note:", "Failure to provide required content, approvals, or access within the agreed timeframes shall not constitute a breach by the Service Provider and may result in timeline extensions or additional charges. The Service Provider reserves the right to invoice for idle time caused by client delays exceeding 14 calendar days."),
+
+      pageBreak(),
+
+      // ─────────────────── SECTION 8: TERMS & CONDITIONS ───────────────────
+      sectionLabel("Section 8"),
+      sectionTitle("Terms & Conditions"),
+      goldLine(),
+      bodyText("The following Terms and Conditions govern the relationship between [Your Name / Agency Name] ('Service Provider') and Summit Law Firm ('Client') with respect to the website development services described in this proposal. By signing this agreement, both parties agree to be bound by these Terms."),
+      spacer(160),
+      itemHeading("8.1  Commencement of Work"),
+      bodyText("Work shall not commence until this agreement has been signed by both parties and the initial deposit (50% of the total agreed fee) has been received by the Service Provider. The project start date shall be defined as the date on which both conditions are fulfilled."),
+      itemHeading("8.2  Revisions & Change Requests"),
+      bodyText("This proposal includes three (3) rounds of revisions. A revision round is defined as a single consolidated set of feedback submitted in writing. Additional revision rounds beyond the three included shall be billed at ₦[Rate] per round. Requests that constitute a change to the original agreed scope of work shall be treated as new work and quoted separately."),
+      itemHeading("8.3  Cancellation Policy"),
+      bodyText("Either party may terminate this agreement with 14 days written notice. In the event of cancellation:"),
+      bulletPoint("If cancelled by the Client before design commences: 50% of the deposit shall be refunded"),
+      bulletPoint("If cancelled after design has commenced but before development: no refund of deposit"),
+      bulletPoint("If cancelled during or after development: full remaining balance for work completed shall be due"),
+      bulletPoint("If cancelled by the Service Provider: all payments received shall be refunded in full within 14 days"),
+      itemHeading("8.4  Late Payment"),
+      bodyText("Payments not received by the agreed due dates may result in the suspension of project work. The Service Provider reserves the right to charge a late payment fee of 5% of the outstanding balance per week for invoices unpaid beyond 7 days of the due date. The website will not be launched until all outstanding balances are settled in full."),
+      itemHeading("8.5  Website Launch Holdback"),
+      bodyText("The live website, including all source files, admin login credentials, and associated assets, shall remain under the control of the Service Provider until the final payment (100% of the total agreed fee) has been received in full. No files or credentials shall be released prior to full payment."),
+      itemHeading("8.6  Third-Party Services"),
+      bodyText("The website may incorporate third-party services such as Google Maps, social media widgets, email marketing tools, or payment gateways. The Client acknowledges that these third-party services are governed by their own terms of service, and the Service Provider shall not be liable for any interruption, data loss, or malfunction attributable to third-party platforms."),
+      itemHeading("8.7  Limitation of Liability"),
+      bodyText("The Service Provider's total liability to the Client for any claim arising out of or in connection with this agreement shall not exceed the total fees paid by the Client under this agreement. The Service Provider shall not be liable for any indirect, incidental, or consequential damages including but not limited to loss of revenue, loss of business, or loss of data."),
+      itemHeading("8.8  Force Majeure"),
+      bodyText("Neither party shall be held liable for any failure or delay in performance of obligations under this agreement arising from causes beyond its reasonable control, including but not limited to acts of God, government restrictions, power outages, internet service disruptions, or other unforeseen circumstances."),
+
+      pageBreak(),
+
+      // ─────────────────── SECTION 9: INTELLECTUAL PROPERTY ───────────────────
+      sectionLabel("Section 9"),
+      sectionTitle("Intellectual Property Rights"),
+      goldLine(),
+      bodyText("Upon receipt of full and final payment, the following intellectual property rights shall be transferred to the Client:"),
+      bulletPoint("Full ownership of all custom design assets created for this project"),
+      bulletPoint("Full ownership of all website code and content developed for this project"),
+      bulletPoint("All source files, including design files and development files"),
+      spacer(120),
+      bodyText("The Client further acknowledges that:"),
+      bulletPoint("Any third-party assets (fonts, stock images, plugins) retain their original licensing terms and are not transferred"),
+      bulletPoint("The Service Provider retains the right to display this project in their professional portfolio unless the Client formally objects in writing within 14 days of launch"),
+      bulletPoint("All content (text, images, logos) supplied by the Client remains the intellectual property of the Client"),
+      bulletPoint("The Service Provider is not responsible for any copyright infringement arising from content provided by the Client"),
+
+      pageBreak(),
+
+      // ─────────────────── SECTION 10: CONFIDENTIALITY ───────────────────
+      sectionLabel("Section 10"),
+      sectionTitle("Confidentiality"),
+      goldLine(),
+      bodyText("Both parties agree to maintain strict confidentiality regarding any proprietary, sensitive, or business-critical information shared during the course of this engagement. The Service Provider shall not disclose any confidential information about the Client's firm, business strategy, client base, or internal affairs to any third party without prior written consent from the Client."),
+      bodyText("Confidential information includes but is not limited to: business plans, financial information, client lists, legal strategies, internal processes, and any other information designated as confidential by either party."),
+      bodyText("This confidentiality obligation shall remain in force for a period of three (3) years following the termination or completion of this agreement."),
+      spacer(120),
+      infoBox("Exclusions:", "This confidentiality clause does not apply to information that is already publicly available, information disclosed with prior written consent, or information required to be disclosed by law or court order."),
+
+      pageBreak(),
+
+      // ─────────────────── SECTION 11: WARRANTY & SUPPORT ───────────────────
+      sectionLabel("Section 11"),
+      sectionTitle("Warranty & Post-Launch Support"),
+      goldLine(),
+      bodyText("The Service Provider warrants that the delivered website will function as described in this proposal and will be free from material defects attributable to the development work. The following support structure applies following the launch of the website:"),
+      spacer(160),
+      wrapTable([
+        makeHeaderRow("Support Type", "Duration", "Coverage"),
+        makeRow([["Free Bug Fix Warranty", { bold: true }], ["30 Days from Launch", {}], ["Technical bugs or errors attributable to the development work", {}]]),
+        makeRow([["Free Minor Updates", { bold: true }], ["30 Days from Launch", {}], ["Text changes, image swaps, minor layout adjustments", {}]]),
+        makeRow([["Paid Maintenance Plan", { bold: true }], ["Monthly (Optional)", {}], ["Ongoing updates, backups, security monitoring, plugin updates", {}]]),
+      ]),
+      spacer(160),
+      bodyText("The warranty does not cover issues arising from:"),
+      bulletPoint("Unauthorized modifications made by the Client or any third party after handover"),
+      bulletPoint("Hosting or server-related issues outside the Service Provider's control"),
+      bulletPoint("Third-party plugin or software conflicts after the warranty period"),
+      bulletPoint("Misuse of the content management system (CMS) by the Client"),
+      bulletPoint("Changes in browser standards or web technologies after the warranty period"),
+
+      pageBreak(),
+
+      // ─────────────────── SECTION 12: DISPUTE RESOLUTION ───────────────────
+      sectionLabel("Section 12"),
+      sectionTitle("Dispute Resolution"),
+      goldLine(),
+      bodyText("In the event of any dispute, claim, or controversy arising out of or in connection with this agreement, both parties agree to first attempt resolution through good faith negotiation within fourteen (14) days of the dispute being raised in writing by either party."),
+      bodyText("If negotiation fails to resolve the dispute within 14 days, the dispute shall be referred to a mutually agreed-upon mediator. The costs of mediation shall be shared equally between both parties."),
+      bodyText("If mediation also fails, the matter shall be submitted to binding arbitration in accordance with the Arbitration and Conciliation Act, Cap. A18, Laws of the Federation of Nigeria, 2004 (as amended). The seat of arbitration shall be Abuja, Federal Capital Territory, Nigeria. The arbitrator's decision shall be final and binding on both parties."),
+      spacer(120),
+      infoBox("Governing Law:", "This agreement is governed by and shall be construed in accordance with the laws of the Federal Republic of Nigeria. Any legal proceedings arising from this agreement shall be conducted within the jurisdiction of the courts in the Federal Capital Territory, Abuja, Nigeria."),
+
+      pageBreak(),
+
+      // ─────────────────── SECTION 13: SIGNATURE PAGE ───────────────────
+      sectionLabel("Section 13"),
+      sectionTitle("Acceptance & Agreement"),
+      goldLine(),
+      bodyText("By signing below, both parties acknowledge that they have read, understood, and agree to be bound by all the terms and conditions set forth in this document. This agreement, once signed by both parties, constitutes a legally binding contract between the Service Provider and the Client."),
+      spacer(200),
+      wrapTable([
+        makeHeaderRow("Item", "Detail"),
+        makeRow([["Project Title", { bold: true }], ["Summit Law Firm — Professional Website Development", {}]]),
+        makeRow([["Document Reference", { bold: true }], ["SLF-WEB-2025-001", {}]]),
+        makeRow([["Total Project Investment", { bold: true }], ["₦ [Total Amount]", { color: GOLD, bold: true }]]),
+        makeRow([["Initial Deposit Required", { bold: true }], ["₦ [50% Amount] — Due on Signing", { color: GOLD, bold: true }]]),
+        makeRow([["Estimated Start Date", { bold: true }], ["[To be completed on signing]", {}]]),
+        makeRow([["Estimated Launch Date", { bold: true }], ["Approximately 7 weeks from start date", {}]]),
+      ]),
+      spacer(400),
+
+      // ── SIGNATURE BLOCKS ──
+      new Paragraph({
+        border: { top: { color: NAVY, size: 8, style: BorderStyle.SINGLE } },
+        spacing: { before: 600, after: 0 },
+        children: []
+      }),
+      new Paragraph({
+        spacing: { before: 0, after: 0 },
+        children: [
+          new TextRun({ text: "SERVICE PROVIDER", font: fontName, size: 18, bold: true, color: GOLD, characterSpacing: 40 }),
+          new TextRun({ text: "\t\t\t\t\t", font: fontName }),
+          new TextRun({ text: "CLIENT — SUMMIT LAW FIRM", font: fontName, size: 18, bold: true, color: GOLD, characterSpacing: 40 }),
+        ]
+      }),
+      spacer(800),
+      new Paragraph({
+        spacing: { before: 0, after: 60 },
+        children: [
+          new TextRun({ text: "Name: [Your Full Name]", font: fontName, size: 22, bold: true, color: NAVY }),
+          new TextRun({ text: "\t\t\t\t", font: fontName }),
+          new TextRun({ text: "Name: [Authorized Signatory]", font: fontName, size: 22, bold: true, color: NAVY }),
+        ]
+      }),
+      new Paragraph({
+        spacing: { after: 60 },
+        children: [
+          new TextRun({ text: "Title: [Your Agency Name]", font: fontName, size: 22, color: GRAY }),
+          new TextRun({ text: "\t\t\t\t\t", font: fontName }),
+          new TextRun({ text: "Title: Managing Partner / Authorized Rep.", font: fontName, size: 22, color: GRAY }),
+        ]
+      }),
+      new Paragraph({
+        spacing: { after: 60 },
+        children: [
+          new TextRun({ text: "Signature: _____________________", font: fontName, size: 22, color: "333333" }),
+          new TextRun({ text: "\t\t\t\t", font: fontName }),
+          new TextRun({ text: "Signature: _____________________", font: fontName, size: 22, color: "333333" }),
+        ]
+      }),
+      new Paragraph({
+        spacing: { after: 60 },
+        children: [
+          new TextRun({ text: "Date: __________________________", font: fontName, size: 22, color: "333333" }),
+          new TextRun({ text: "\t\t\t\t", font: fontName }),
+          new TextRun({ text: "Date: __________________________", font: fontName, size: 22, color: "333333" }),
+        ]
+      }),
+      new Paragraph({
+        spacing: { after: 60 },
+        children: [
+          new TextRun({ text: "Phone: _________________________", font: fontName, size: 22, color: "333333" }),
+          new TextRun({ text: "\t\t\t\t", font: fontName }),
+          new TextRun({ text: "Stamp / Firm Seal: ______________", font: fontName, size: 22, color: "333333" }),
+        ]
+      }),
+      spacer(400),
+      warningBox("Before Signing:", "Please ensure you have read all 13 sections of this document carefully. If you have any questions or require any amendments, kindly contact the Service Provider before executing this agreement. Once signed by both parties, this document becomes legally binding."),
+      spacer(400),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        shading: { type: ShadingType.SOLID, color: "F9F7F3" },
+        border: {
+          top: { color: "E0D9CC", size: 6, style: BorderStyle.SINGLE },
+          bottom: { color: "E0D9CC", size: 6, style: BorderStyle.SINGLE },
+        },
+        spacing: { before: 120, after: 120 },
+        children: [
+          new TextRun({ text: "This document was prepared exclusively for Summit Law Firm, Abuja, Nigeria.\n", font: fontName, size: 18, color: GRAY }),
+          new TextRun({ text: "Document Ref: SLF-WEB-2025-001  |  Version 1.0  |  April 2025  |  Prepared by: [Your Name / Agency Name]  |  Valid 30 days from issue.", font: fontName, size: 18, color: "999999" })
+        ]
+      }),
+    ];
+
+    // ─────────────── BUILD FINAL DOCUMENT ───────────────
+    const doc = new Document({
+      creator: "[Your Agency Name]",
+      title: "Summit Law Firm — Website Development Proposal & Terms",
+      description: "Official Website Development Proposal and Terms of Engagement for Summit Law Firm, Abuja, Nigeria.",
+      styles: {
+        default: {
+          document: {
+            run: { font: fontName, size: 22, color: "333333" },
+            paragraph: { spacing: { line: 360 } }
+          }
+        }
+      },
+      sections: [{
+        properties: {
+          page: {
+            margin: {
+              top: convertInchesToTwip(1.1),
+              bottom: convertInchesToTwip(1.1),
+              left: convertInchesToTwip(1.2),
+              right: convertInchesToTwip(1.2),
+            }
+          }
+        },
+        headers: {
+          default: new Header({
+            children: [
+              new Paragraph({
+                border: { bottom: { color: "EEEEEE", size: 6, style: BorderStyle.SINGLE } },
+                spacing: { after: 120 },
+                children: [
+                  new TextRun({ text: "Summit Law Firm — Website Development Proposal & Terms", font: fontName, size: 18, color: "999999" }),
+                  new TextRun({ text: "   |   Ref: SLF-WEB-2025-001", font: fontName, size: 18, color: "CCCCCC" })
+                ]
+              })
+            ]
+          })
+        },
+        footers: {
+          default: new Footer({
+            children: [
+              new Paragraph({
+                border: { top: { color: "EEEEEE", size: 6, style: BorderStyle.SINGLE } },
+                spacing: { before: 120 },
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({ text: "© 2025 [Your Agency Name]   |   Confidential — Prepared for Summit Law Firm, Abuja   |   Page ", font: fontName, size: 17, color: "AAAAAA" }),
+                  new PageNumber({ font: fontName, size: 17, color: GOLD }),
+                ]
+              })
+            ]
+          })
+        },
+        children
+      }]
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Summit_Law_Firm_Website_Proposal_&_Terms_2025.docx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    status.className = 'status success';
+    status.textContent = '✅ Document downloaded successfully! Open in Microsoft Word.';
+    btn.textContent = '✅  Downloaded Successfully!';
+    btn.style.background = '#27ae60';
+    btn.style.color = 'white';
+
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = '⬇️   Download Word Document (.docx)';
+      btn.style.background = '';
+      btn.style.color = '';
+    }, 4000);
+
+  } catch (err) {
+    console.error(err);
+    status.className = 'status error';
+    status.textContent = '❌ Error: ' + err.message;
+    btn.disabled = false;
+    btn.textContent = '⬇️   Download Word Document (.docx)';
+  }
+}
+</script>
+</body>
+</html>
